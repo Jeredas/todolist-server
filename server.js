@@ -8,7 +8,7 @@ const testService = require('./services/testService');
 const todoListService = require('./services/todoList/todoListService');
 const authService = require('./authService');
 
-const wsServ = require('./socketService');
+const {SocketServer} = require('./socketService');
 
 const app_port = process.env.app_port || 4040;
 const app_host = process.env.app_host || '127.0.0.1';
@@ -69,6 +69,8 @@ echoService.start();
 testService.start();
 todoListService.start();
 authService.start();
+
+new SocketServer();
 
 console.log('Web server running at http://' + app_host + ':' + app_port);
 
