@@ -96,7 +96,7 @@ class SocketRouter{
 
   closeConnection(connection){
     Object.keys(this.services).forEach(it=>{
-      it.closeConnection(connection);
+      this.services[it].closeConnection(connection);
     })
   }
 }
@@ -107,26 +107,46 @@ class ChatService{
     this.clients = [];
   }
 
+  userList(connection, params){
+    connection.sendUTF(JSON.stringify({type:'userList', userList:this.clients.map(it=>it.userData.login)}));
+  }
+
   joinUser(connection, params){
     authService.getUserBySessionId(params.sessionId).then(sessionData=>{
       return dbService.db.collection('users').findOne({login: sessionData.login});
     }).then(userData=>{
-      console.log(userData)
-      this.clients.push({connection, userData});
+      if (userData){
+        console.log(userData)
+        this.clients.push({connection, userData});
+        this.clients.forEach(it=>{
+          it.connection.sendUTF(JSON.stringify({type:'userList', userList:this.clients.map(it=>it.userData.login)}));
+        });
+      }
     });
   }
 
   leaveUser(connection, params){
     this.clients = this.clients.filter(it => it.connection != connection);  
+    this.clients.forEach(it=>{
+      it.connection.sendUTF(JSON.stringify({type:'userList', userList:this.clients.map(it=>it.userData.login)}));
+    });
   };
 
   sendMessage(connection, params){
-    const currentUser = this.clients.find(it => it.connection == connection).userData;  
-    this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({senderNick:currentUser.login, messageText:params.messageText})));  
+    const currentClient = this.clients.find(it => it.connection == connection);  
+    if (currentClient){
+      let currentUser = currentClient.userData;
+      if (currentUser){
+        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({type:'message',senderNick:currentUser.login, messageText:params.messageText})));  
+      }
+    }
   }
 
   closeConnection(connection){
-    this.clients = this.clients.filter(it => it.connection != connection);  
+    this.clients = this.clients.filter(it => it.connection != connection); 
+    this.clients.forEach(it=>{
+      it.connection.sendUTF(JSON.stringify({type:'userList', userList:this.clients.map(it=>it.userData.login)}));
+    });
   }
 }
 
