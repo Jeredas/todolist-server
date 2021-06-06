@@ -1,0 +1,23 @@
+{
+  "name": "6863-732a76c16d8f9f9aa18a976b73025dfc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://git.cloudno.de/git/zhanzs/6863-732a76c16d8f9f9aa18a976b73025dfc.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "cloudnode-cli": "^0.2.23"
+  },
+  "dependencies": {
+    "mongodb": "^3.6.6",
+    "websocket": "^1.0.34"
+  }
+}
