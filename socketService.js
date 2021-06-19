@@ -4,7 +4,9 @@ const authService = require('./authService');
 const dbService = require('./dbService');
 const http = require('http');
 const { ObjectID } = require('mongodb');
+const { CrossGame } = require('./cross');
 
+const crossGame = new CrossGame();
 class SocketRequest {
   constructor(rawData) {
     let obj = JSON.parse(rawData);
@@ -144,7 +146,8 @@ class ChatService {
     if (currentClient) {
       let currentUser = currentClient.userData;
       if (currentUser) {
-        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'player', senderNick: currentUser.login })));
+        crossGame.setPlayers(currentUser.login);
+        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'player', senderNick: currentUser.login, players: crossGame.getPlayers() })));
       }
     }
   }
@@ -174,31 +177,40 @@ class ChatService {
   }
 
   joinChannel(connection, params) {
-    
+
     authService.getUserBySessionId(params.sessionId).then(sessionData => {
       return dbService.db.collection('users').findOne({ login: sessionData.login });
     }).then(userData => {
       const channel = this.channels.find(el => params.channelName === el.name)
 
       const lastChannel = this.channels.find((channel) => {
-        const client =  channel.clients.find((client) => client.userData.login === userData.login);
-        if(client) {
+        const client = channel.clients.find((client) => client.userData.login === userData.login);
+        if (client) {
           return true
         }
       });
-  
-      if(lastChannel) {
+      if (lastChannel) {
         lastChannel.leaveUser(connection, params)
       }
-  
       if (channel) {
-        channel.joinUser(connection,params);
+        channel.joinUser(connection, params);
       }
     })
-
-    
   }
 
+  crossMove(connection, params) {
+    const currentClient = this.clients.find(it => it.connection == connection);
+    if (currentClient) {
+      let currentUser = currentClient.userData;
+      if (currentUser) {
+        crossGame.writeSignToField(currentUser.login, JSON.parse(params.messageText));
+        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'crossMove', senderNick: currentUser.login, messageText: params.messageText, field: crossGame.getField(), winner: crossGame.getWinner() })));
+        if (crossGame.getWinner()) {
+          crossGame.clearData();
+        }
+      }
+    }
+  }
 }
 
 function originIsAllowed(origin) {
@@ -213,7 +225,7 @@ class ChannelListResponse {
    */
   constructor(channels) {
     this.type = 'channelList';
-    this.channelList - channels.map(channel => ({name: channel.name}))
+    this.channelList - channels.map(channel => ({ name: channel.name }))
   }
 }
 
@@ -257,6 +269,11 @@ class ChatChannel {
   }
 }
 
+
+
+
 module.exports = {
   SocketServer
 }
+
+
