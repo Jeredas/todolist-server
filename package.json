@@ -17,7 +17,7 @@
     "cloudnode-cli": "^0.2.23"
   },
   "dependencies": {
-    "mongodb": "^3.6.6",
+    "mongodb": "^3.6.9",
     "websocket": "^1.0.34"
   }
 }
