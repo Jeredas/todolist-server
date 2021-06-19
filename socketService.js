@@ -6,7 +6,7 @@ const http = require('http');
 const { ObjectID } = require('mongodb');
 
 class SocketRequest {
-  constructor (rawData){
+  constructor(rawData) {
     let obj = JSON.parse(rawData);
 
     /**
@@ -58,11 +58,11 @@ class SocketServer {
         console.log((new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
         return;
       }
-    
+
       var connection = request.accept(null, request.origin);
       this.clients.push(connection);
       console.log((new Date()) + ' Connection accepted.');
-      connection.on('message',  (message) => {
+      connection.on('message', (message) => {
         if (message.type === 'utf8') {
           console.log('Received Message: ' + message.utf8Data, 'clients -> ' + this.clients.length);
           //connection.sendUTF(message.utf8Data);
@@ -84,75 +84,177 @@ class SocketServer {
   }
 }
 
-class SocketRouter{
-  
-  constructor(){
-    this.services = {chat: new ChatService()};
+class SocketRouter {
+
+  constructor() {
+    this.services = { chat: new ChatService() };
   }
 
-  route(serviceName, endpointName, connection, params){
+  route(serviceName, endpointName, connection, params) {
     this.services[serviceName][endpointName](connection, params);
   }
 
-  closeConnection(connection){
-    Object.keys(this.services).forEach(it=>{
+  closeConnection(connection) {
+    Object.keys(this.services).forEach(it => {
       this.services[it].closeConnection(connection);
     })
   }
 }
 
-class ChatService{
-  constructor(){
+class ChatService {
+  constructor() {
     this.serviceName = 'chat';
     this.clients = [];
+    this.channels = [
+      new ChatChannel('qq'),
+      new ChatChannel('ww')
+    ];
+    this.players = [];
   }
 
-  userList(connection, params){
-    connection.sendUTF(JSON.stringify({type:'userList', userList:this.clients.map(it=>it.userData.login)}));
+  userList(connection, params) {
+    connection.sendUTF(JSON.stringify({ type: 'userList', userList: this.clients.map(it => it.userData.login) }));
   }
 
-  joinUser(connection, params){
-    authService.getUserBySessionId(params.sessionId).then(sessionData=>{
-      return dbService.db.collection('users').findOne({login: sessionData.login});
-    }).then(userData=>{
-      if (userData){
+  channelList(connection, params) {
+    connection.sendUTF(JSON.stringify(new ChannelListResponse(this.channels)));
+  }
+
+  playerList(connection, params) {
+    connection.sendUTF(JSON.stringify({ type: 'playerList', playerList: this.clients.map(it => it.userData.login) }));
+  }
+
+  joinUser(connection, params) {
+    connection.sendUTF(JSON.stringify({ type: 'channelList', channelList: this.channels.map(it => ({ name: it.name })) }));
+    authService.getUserBySessionId(params.sessionId).then(sessionData => {
+      return dbService.db.collection('users').findOne({ login: sessionData.login });
+    }).then(userData => {
+      if (userData) {
         console.log(userData)
-        this.clients.push({connection, userData});
-        this.clients.forEach(it=>{
-          it.connection.sendUTF(JSON.stringify({type:'userList', userList:this.clients.map(it=>it.userData.login)}));
+        this.clients.push({ connection, userData });
+        this.clients.forEach(it => {
+          it.connection.sendUTF(JSON.stringify({ type: 'userList', userList: this.clients.map(it => it.userData.login) }));
         });
       }
     });
   }
 
-  leaveUser(connection, params){
-    this.clients = this.clients.filter(it => it.connection != connection);  
-    this.clients.forEach(it=>{
-      it.connection.sendUTF(JSON.stringify({type:'userList', userList:this.clients.map(it=>it.userData.login)}));
-    });
-  };
-
-  sendMessage(connection, params){
-    const currentClient = this.clients.find(it => it.connection == connection);  
-    if (currentClient){
+  joinPlayer(connection, params) {
+    const currentClient = this.clients.find(it => it.connection == connection);
+    if (currentClient) {
       let currentUser = currentClient.userData;
-      if (currentUser){
-        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({type:'message',senderNick:currentUser.login, messageText:params.messageText})));  
+      if (currentUser) {
+        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'player', senderNick: currentUser.login })));
       }
     }
   }
 
-  closeConnection(connection){
-    this.clients = this.clients.filter(it => it.connection != connection); 
-    this.clients.forEach(it=>{
-      it.connection.sendUTF(JSON.stringify({type:'userList', userList:this.clients.map(it=>it.userData.login)}));
+  leaveUser(connection, params) {
+    this.clients = this.clients.filter(it => it.connection != connection);
+    this.clients.forEach(it => {
+      it.connection.sendUTF(JSON.stringify({ type: 'userList', userList: this.clients.map(it => it.userData.login) }));
+    });
+  };
+
+  sendMessage(connection, params) {
+    const currentClient = this.clients.find(it => it.connection == connection);
+    if (currentClient) {
+      let currentUser = currentClient.userData;
+      if (currentUser) {
+        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'message', senderNick: currentUser.login, messageText: params.messageText })));
+      }
+    }
+  }
+
+  closeConnection(connection) {
+    this.clients = this.clients.filter(it => it.connection != connection);
+    this.clients.forEach(it => {
+      it.connection.sendUTF(JSON.stringify({ type: 'userList', userList: this.clients.map(it => it.userData.login) }));
     });
   }
+
+  joinChannel(connection, params) {
+    
+    authService.getUserBySessionId(params.sessionId).then(sessionData => {
+      return dbService.db.collection('users').findOne({ login: sessionData.login });
+    }).then(userData => {
+      const channel = this.channels.find(el => params.channelName === el.name)
+
+      const lastChannel = this.channels.find((channel) => {
+        const client =  channel.clients.find((client) => client.userData.login === userData.login);
+        if(client) {
+          return true
+        }
+      });
+  
+      if(lastChannel) {
+        lastChannel.leaveUser(connection, params)
+      }
+  
+      if (channel) {
+        channel.joinUser(connection,params);
+      }
+    })
+
+    
+  }
+
 }
 
 function originIsAllowed(origin) {
   // put logic here to detect whether the specified origin is allowed.
   return true;
+}
+
+class ChannelListResponse {
+  /**
+   * 
+   * @param {Array<ChatChannel>*} channels 
+   */
+  constructor(channels) {
+    this.type = 'channelList';
+    this.channelList - channels.map(channel => ({name: channel.name}))
+  }
+}
+
+class ChatChannel {
+  /**
+   * 
+   * @param {string} name 
+   */
+  constructor(name) {
+    this.name = name;
+    this.clients = [];
+  }
+  joinUser(connection, params) {
+    authService.getUserBySessionId(params.sessionId).then(sessionData => {
+      return dbService.db.collection('users').findOne({ login: sessionData.login });
+    }).then(userData => {
+      if (userData) {
+        console.log(userData)
+        this.clients.push({ connection, userData });
+        this.clients.forEach(it => {
+          it.connection.sendUTF(JSON.stringify({ type: 'userList', userList: this.clients.map(it => it.userData.login) }));
+        });
+      }
+    });
+  }
+  leaveUser(connection, params) {
+    this.clients = this.clients.filter(it => it.connection != connection);
+    this.clients.forEach(it => {
+      it.connection.sendUTF(JSON.stringify({ type: 'userList', userList: this.clients.map(it => it.userData.login) }));
+    });
+  };
+
+  sendMessage(connection, params) {
+    const currentClient = this.clients.find(it => it.connection == connection);
+    if (currentClient) {
+      let currentUser = currentClient.userData;
+      if (currentUser) {
+        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'message', senderNick: currentUser.login, messageText: params.messageText })));
+      }
+    }
+  }
 }
 
 module.exports = {
