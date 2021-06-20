@@ -147,7 +147,7 @@ class ChatService {
       let currentUser = currentClient.userData;
       if (currentUser) {
         crossGame.setPlayers(currentUser.login);
-        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'player', senderNick: currentUser.login, players: crossGame.getPlayers() })));
+        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'player', senderNick: currentUser.login, time: Date.now() })));
       }
     }
   }
@@ -203,11 +203,14 @@ class ChatService {
     if (currentClient) {
       let currentUser = currentClient.userData;
       if (currentUser) {
-        crossGame.writeSignToField(currentUser.login, JSON.parse(params.messageText));
-        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'crossMove', senderNick: currentUser.login, messageText: params.messageText, field: crossGame.getField(), winner: crossGame.getWinner() })));
-        if (crossGame.getWinner()) {
-          crossGame.clearData();
+        if (crossGame.getCurrentPlayer() === currentUser.login) {
+          crossGame.writeSignToField(currentUser.login, JSON.parse(params.messageText));
+          this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'crossMove', senderNick: currentUser.login, messageText: params.messageText, field: crossGame.getField(), winner: crossGame.getWinner(), sign: crossGame.getCurrentSign() })));
+          if (crossGame.getWinner()) {
+            crossGame.clearData();
+          }
         }
+
       }
     }
   }

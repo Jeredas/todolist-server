@@ -11,6 +11,7 @@ class CrossGame {
     this.currentPlayerIndex = 0;
     this.signs = ['X', 'O'];
     this.winner = '';
+    this.currentSign = this.signs[0];
   }
 
   getPlayers() {
@@ -33,7 +34,7 @@ class CrossGame {
         if (player === this.players[this.currentPlayerIndex]) {
           this.field[coords.y][coords.x] = this.signs[this.currentPlayerIndex];
           this.checkWinner(coords, this.signs[this.currentPlayerIndex]);
-
+          this.currentSign = this.signs[this.currentPlayerIndex];
           this.setCurrentPlayer();
         }
       }
@@ -117,7 +118,7 @@ class CrossGame {
     });
     if (countHor === size || countVer === size || countDiagPrim === size || countDiagSec === size) {
       this.winner = this.players[this.currentPlayerIndex];
-      console.log(`Win! The player ${this.currentPlayerIndex} wins the game`);
+      console.log(`Win! The player ${this.players[this.currentPlayerIndex]} wins the game`);
     }
   }
 
@@ -132,6 +133,13 @@ class CrossGame {
     this.winner = '';
   }
 
+  getCurrentSign() {
+    return this.currentSign;
+  }
+
+  getCurrentPlayer() {
+    return this.players[this.currentPlayerIndex];
+  }
 }
 
 module.exports = { CrossGame };
