@@ -214,6 +214,24 @@ class ChatService {
       }
     }
   }
+  chessMove(connection, params) {
+    const currentClient = this.clients.find(it => it.connection == connection);
+    if (currentClient) {
+      let currentUser = currentClient.userData;
+      if (currentUser) {
+          this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chessMove', senderNick: currentUser.login, messageText: params.messageText, field: '', winner: '', sign: '' })));
+      }
+    }
+  }
+  chessFigureGrab(connection, params) {
+    const currentClient = this.clients.find(it => it.connection == connection);
+    if (currentClient) {
+      let currentUser = currentClient.userData;
+      if (currentUser) {
+          console.log(params.messageText);
+      }
+    }
+  }
 }
 
 function originIsAllowed(origin) {
