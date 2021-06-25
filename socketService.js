@@ -5,8 +5,10 @@ const dbService = require('./dbService');
 const http = require('http');
 const { ObjectID } = require('mongodb');
 const { CrossGame } = require('./cross');
+const { ChessGame } = require('./chess');
 
 const crossGame = new CrossGame();
+const chessGame = new ChessGame();
 class SocketRequest {
   constructor(rawData) {
     let obj = JSON.parse(rawData);
@@ -147,6 +149,7 @@ class ChatService {
       let currentUser = currentClient.userData;
       if (currentUser) {
         crossGame.setPlayers(currentUser.login);
+        chessGame.setPlayers(currentUser.login);
         this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'player', senderNick: currentUser.login, time: Date.now() })));
       }
     }
@@ -219,7 +222,11 @@ class ChatService {
     if (currentClient) {
       let currentUser = currentClient.userData;
       if (currentUser) {
-          this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chessMove', senderNick: currentUser.login, messageText: params.messageText, field: '', winner: '', sign: '' })));
+        console.log(chessGame.getCurrentPlayer(), currentUser.login);
+        if (chessGame.getCurrentPlayer() === currentUser.login) {
+          chessGame.changePlayer(currentUser.login);
+          this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "chessMove", senderNick: currentUser.login, messageText: params.messageText, field: '', winner: '', sign: '' })));
+        }
       }
     }
   }
@@ -228,7 +235,19 @@ class ChatService {
     if (currentClient) {
       let currentUser = currentClient.userData;
       if (currentUser) {
+        if (chessGame.getCurrentPlayer() === currentUser.login) {
           console.log(params.messageText);
+        }
+      }
+    }
+  }
+
+  chessStartGame(connection, params) {
+    const currentClient = this.clients.find(it => it.connection == connection);
+    if (currentClient) {
+      let currentUser = currentClient.userData;
+      if (currentUser.login === params.messageText) {
+        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "startGame", start: true })));
       }
     }
   }
