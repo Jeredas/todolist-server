@@ -1,5 +1,20 @@
+const { FieldModel } = require("./chess-model");
+
+const initialField = [
+  'lneqkenl',
+  'pppppppp',
+  '        ',
+  '        ',
+  '        ',
+  '        ',
+  'PPPPPPPP',
+  'LNEQKENL',
+];
+
 class ChessGame {
   constructor() {
+    this.model = new FieldModel();
+    this.model.setFromStrings(initialField);
 
     this.fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';
     this.mockFen = '1k6/8/3K4/8/8/7B/6Q1/8;'
@@ -40,7 +55,7 @@ class ChessGame {
           // this.field[coords.y][coords.x] = this.signs[this.currentPlayerIndex];
           // this.checkWinner(coords, this.signs[this.currentPlayerIndex]);
           // this.currentSign = this.signs[this.currentPlayerIndex];
-          
+
         }
       }
     }

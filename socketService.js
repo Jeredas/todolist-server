@@ -5,7 +5,7 @@ const dbService = require('./dbService');
 const http = require('http');
 const { ObjectID } = require('mongodb');
 const { CrossGame } = require('./cross');
-const { ChessGame } = require('./chess');
+const { ChessGame } = require('./chess/chess');
 
 const crossGame = new CrossGame();
 const chessGame = new ChessGame();
@@ -236,8 +236,12 @@ class ChatService {
       let currentUser = currentClient.userData;
       if (currentUser) {
         if (chessGame.getCurrentPlayer() === currentUser.login) {
-          this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "chessFigureGrab", moves: chessGame.getAllowedMoves() })));
-          console.log(params.messageText);
+          const coord = JSON.parse(params.messageText);
+          console.log('coord', coord);
+          const arr = chessGame.model.getAllowed(chessGame.model.state, coord.y, coord.x);
+          console.log('state', chessGame.model.state);
+          console.log('allowed', arr);
+          this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "chessFigureGrab", moves: arr })));
         }
       }
     }
