@@ -224,8 +224,8 @@ class ChatService {
       if (currentUser) {
         console.log(chessGame.getCurrentPlayer(), currentUser.login);
         if (chessGame.getCurrentPlayer() === currentUser.login) {
-          chessGame.changePlayer(currentUser.login);
-          this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "chessMove", senderNick: currentUser.login, messageText: params.messageText, field: '', winner: '', sign: '' })));
+          chessGame.changePlayer(currentUser.login, params.messageText);
+          this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "chessMove", senderNick: currentUser.login, messageText: params.messageText, field: chessGame.getMockField(), winner: '', sign: '' })));
         }
       }
     }
@@ -248,7 +248,8 @@ class ChatService {
     if (currentClient) {
       let currentUser = currentClient.userData;
       if (currentUser.login === params.messageText) {
-        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "startGame", start: true })));
+        console.log(chessGame.getField());
+        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "startGame", start: true, field: chessGame.getField() })));
       }
     }
   }
@@ -271,7 +272,7 @@ class ChatService {
       let currentUser = currentClient.userData;
       if (currentUser.login) {
         chessGame.clearData();
-        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "removeGame", remove: true })));
+        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "removeGame", remove: true, field: chessGame.getField() })));
       }
     }
   }
