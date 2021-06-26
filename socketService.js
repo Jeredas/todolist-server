@@ -6,6 +6,7 @@ const http = require('http');
 const { ObjectID } = require('mongodb');
 const { CrossGame } = require('./cross');
 const { ChessGame } = require('./chess/chess');
+const { Vector } = require('./chess/vector');
 
 const crossGame = new CrossGame();
 const chessGame = new ChessGame();
@@ -224,8 +225,13 @@ class ChatService {
       if (currentUser) {
         console.log(chessGame.getCurrentPlayer(), currentUser.login);
         if (chessGame.getCurrentPlayer() === currentUser.login) {
+          const coords = JSON.parse(params.messageText);
+          console.log('coords', coords);
+          chessGame.model.move(coords[0].y, coords[0].x, coords[1].y, coords[1].x)
+          console.log('move', chessGame.model.toFEN());
+          // console.log('state', chessGame.model.state);
           chessGame.changePlayer(currentUser.login, params.messageText);
-          this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "chessMove", senderNick: currentUser.login, messageText: params.messageText, field: chessGame.getMockField(), winner: '', sign: '' })));
+          this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "chessMove", senderNick: currentUser.login, messageText: params.messageText, field: chessGame.model.toFEN(), winner: '', sign: '' })));
         }
       }
     }
@@ -237,10 +243,10 @@ class ChatService {
       if (currentUser) {
         if (chessGame.getCurrentPlayer() === currentUser.login) {
           const coord = JSON.parse(params.messageText);
-          console.log('coord', coord);
-          const arr = chessGame.model.getAllowed(chessGame.model.state, coord.y, coord.x);
-          console.log('state', chessGame.model.state);
-          console.log('allowed', arr);
+          // console.log('coord', coord);
+          const arr = chessGame.model.getAllowed(chessGame.model.state, coord.y, coord.x).map(it => new Vector(it.y, it.x));
+          // console.log('state', chessGame.model.state);
+          // console.log('allowed', arr);
           this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "chessFigureGrab", moves: arr })));
         }
       }

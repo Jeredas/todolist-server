@@ -21,6 +21,15 @@ function createFigure(type, color) {
   return FigureClass ? new FigureClass(color) : null;
 }
 
+const figType = new Map([
+  ['k', 'K'],
+  ['q', 'Q'],
+  ['l', 'R'],
+  ['e', 'B'],
+  ['n', 'N'],
+  ['p', 'P'],
+])
+
 class FigureModel {
   constructor(color) {
     this.color = color;
@@ -40,6 +49,11 @@ class FigureModel {
   getMoves(field, fromX, fromY) {
     let res = [];
     return res;
+  }
+
+  toFen() {
+    console.log('figType ', figType.get(this.type), ' type ', this.type);
+    return this.color === 1 ? figType.get(this.type) : figType.get(this.type).toLowerCase();
   }
 }
 
@@ -235,11 +249,11 @@ class King extends FigureModel {
 }
 
 //  type FieldState = Array<Array<CellModel>>;
-
+const COMMON_BOARD_SIZE = 8;
 class FieldModel {
 
   constructor() {
-
+    this.currentColor = 1;
   }
 
   setAllowed() {
@@ -328,12 +342,12 @@ class FieldModel {
       this.setState(this.state);
       this.currentColor = (this.currentColor + 1) % 2;
       //console.log(this.currentColor, this.getCheckedKing(this.state));
-      if (this.currentColor === 0) {
-        //this.randomMove();
-        this.logicMove((cur, next) => {
-          return this.logic(cur, next);
-        });
-      }
+      // if (this.currentColor === 0) {
+      //   //this.randomMove();
+      //   this.logicMove((cur, next) => {
+      //     return this.logic(cur, next);
+      //   });
+      // }
     }
   }
 
@@ -490,6 +504,52 @@ class FieldModel {
     this.state = newState;
     // this.onChange.emit(newState);
   }
+
+  toFEN() {
+    let result = new Array();
+    for (let y = 0; y < COMMON_BOARD_SIZE; y++) {
+      let freeCount = 0;
+      for (let x = 0; x < COMMON_BOARD_SIZE; x++) {
+        let coord = new Vector(x, y);
+        if (this.isFreeCell(coord)) {
+          freeCount++;
+        } else {
+          if (freeCount > 0) {
+            result.push(String(freeCount));
+            freeCount = 0;
+          }
+          const figure = this.getFigure(coord);
+          console.log('figure ', figure);
+          result.push(figure ? figure.toFen() : '');
+        }
+      }
+      if (freeCount > 0) {
+        result.push(String(freeCount));
+        freeCount = 0;
+      }
+      result.push(y == COMMON_BOARD_SIZE - 1 ? ' ' : '/');
+    }
+    // result.push(this.playerColor == ChessColor.white ? 'w ' : 'b ');
+    // result.push(this.isShortWhiteCastling ? 'K' : '');
+    // result.push(this.isLongWhiteCastling ? 'Q' : '');
+    // result.push(this.isShortBlackCastling ? 'k' : '');
+    // result.push(this.isLongBlackCastling ? 'q' : '');
+    // result.push(' ');
+    // result.push(this.pawnTresspassing === null ? '-' : this.pawnTresspassing.toString());
+    // result.push(' ');
+    // result.push(String(this.fiftyRuleCount));
+    // result.push(' ');
+    // result.push(String(this.moveNumber));
+    return result.join('');
+  }
+  isFreeCell(coord) {
+    return this.state[coord.y][coord.x].figure ? false : true;
+  }
+
+  getFigure(coord) {
+    return this.state[coord.y][coord.x].figure;
+  }
+
 }
 
 module.exports = { FieldModel }
