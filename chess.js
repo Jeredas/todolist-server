@@ -1,3 +1,4 @@
+
 class ChessGame {
   constructor() {
     this.players = [];
@@ -22,9 +23,8 @@ class ChessGame {
   changePlayer(player, coords) {
     if (this.players.length === 2) {
       if (!this.winner) {
-        console.log('inside');
         if (player === this.players[this.currentPlayerIndex]) {
-          
+
           // this.field[coords.y][coords.x] = this.signs[this.currentPlayerIndex];
           // this.checkWinner(coords, this.signs[this.currentPlayerIndex]);
           // this.currentSign = this.signs[this.currentPlayerIndex];
@@ -32,6 +32,16 @@ class ChessGame {
         }
       }
     }
+  }
+
+  getAllowedMoves() {
+    return [{ x: 0, y: 5 }, { x: 0, y: 4 }]
+  }
+
+  clearData() {
+    this.players = [];
+    this.currentPlayerIndex = 0;
+    this.winner = '';
   }
 
 }

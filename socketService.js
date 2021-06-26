@@ -236,6 +236,7 @@ class ChatService {
       let currentUser = currentClient.userData;
       if (currentUser) {
         if (chessGame.getCurrentPlayer() === currentUser.login) {
+          this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "chessFigureGrab", moves: chessGame.getAllowedMoves() })));
           console.log(params.messageText);
         }
       }
@@ -248,6 +249,29 @@ class ChatService {
       let currentUser = currentClient.userData;
       if (currentUser.login === params.messageText) {
         this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "startGame", start: true })));
+      }
+    }
+  }
+
+  chessStopGame(connection, params) {
+    const currentClient = this.clients.find(it => it.connection == connection);
+    if (currentClient) {
+      let currentUser = currentClient.userData;
+      if (currentUser.login) {
+        chessGame.clearData();
+        console.log(params.messageText);
+        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "stopGame", stop: true })));
+      }
+    }
+  }
+
+  chessRemoveGame(connection, params) {
+    const currentClient = this.clients.find(it => it.connection == connection);
+    if (currentClient) {
+      let currentUser = currentClient.userData;
+      if (currentUser.login) {
+        chessGame.clearData();
+        this.clients.forEach(it => it.connection.sendUTF(JSON.stringify({ type: 'chess-events', method: "removeGame", remove: true })));
       }
     }
   }
